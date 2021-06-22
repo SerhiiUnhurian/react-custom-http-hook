@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import useHttp from './components/hooks/use-http';
 import NewTask from './components/NewTask/NewTask';
 import Tasks from './components/Tasks/Tasks';
@@ -6,30 +6,29 @@ import Tasks from './components/Tasks/Tasks';
 function App() {
   const [tasks, setTasks] = useState([]);
 
-  const transformTasks = useCallback(tasksObj => {
-    const loadedTasks = [];
+  const { isLoading, error, sendRequest: fetchTasks } = useHttp();
 
-    for (const taskKey in tasksObj) {
-      loadedTasks.push({ id: taskKey, text: tasksObj[taskKey].text });
-    }
+  const loadTasks = useCallback(() => {
+    const requestConfig = {
+      url: 'https://next-starter-bc9e6-default-rtdb.europe-west1.firebasedatabase.app/tasks.json',
+    };
 
-    setTasks(loadedTasks);
-  }, []);
+    const transformTasks = tasksObj => {
+      const loadedTasks = [];
 
-  const requestConfig = useMemo(
-    () => ({ url: 'https://react-http-6b4a6.firebaseio.com/tasks.json' }),
-    []
-  );
+      for (const taskKey in tasksObj) {
+        loadedTasks.push({ id: taskKey, text: tasksObj[taskKey].text });
+      }
 
-  const {
-    isLoading,
-    error,
-    sendRequest: fetchTasks,
-  } = useHttp(requestConfig, transformTasks);
+      setTasks(loadedTasks);
+    };
+
+    fetchTasks(requestConfig, transformTasks);
+  }, [fetchTasks]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    loadTasks();
+  }, [loadTasks]);
 
   const taskAddHandler = task => {
     setTasks(prevTasks => prevTasks.concat(task));
@@ -42,7 +41,7 @@ function App() {
         items={tasks}
         loading={isLoading}
         error={error}
-        onFetch={fetchTasks}
+        onFetch={loadTasks}
       />
     </React.Fragment>
   );
